@@ -1,0 +1,13 @@
+[Unit]
+Description=Ddns updater
+After=network.target
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/ddns-updater
+ExecStart=/opt/ddns-updater/env/bin/python ddns_updater.py -r -s ns1.example.com -z zone.example.com
+User=<user>
+Group=<group>
+
+[Install]
+WantedBy=multi-user.target
