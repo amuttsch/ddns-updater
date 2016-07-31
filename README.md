@@ -5,6 +5,7 @@ Small webserver to update ddns entries using nsupdate.
 Create a new virutalenv and install all the requirements:
 
     virtualenv env
+    source env/bin/activate
     pip install -r requirements.txt
 
 Next, name your keyfile to `ddns-key.conf` and copy it into your install directory.
