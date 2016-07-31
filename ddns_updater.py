@@ -20,6 +20,7 @@ app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///database.db'
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = True
 db = SQLAlchemy(app)
 
+
 class User(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     user = db.Column(db.String(80), unique=True)
@@ -59,11 +60,13 @@ def update():
     domain = request.args.get('domain')
 
     if VERBOSE:
-        print('New update request from {}, domain {}, ip {}\n'.format(username, domain, ip))
+        print('New update request from {}, domain {}, ip {}\n'
+              .format(username, domain, ip))
 
     # Query user and check password
     user = User.query.filter_by(user=username, domain=domain).first_or_404()
-    if not password or not bcrypt.checkpw(password.encode('UTF-8'), user.password):
+    if not password or not bcrypt.checkpw(password.encode('UTF-8'),
+                                          user.password):
         abort(401)
 
     # Validate ip
@@ -92,12 +95,15 @@ def add_user(username, pw, domain):
         print('User {} added successfully'.format(username))
     except exc.IntegrityError:
         print('User {} already exists'.format(username))
-        
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='DDNS updater')
-    parser.add_argument('-a', nargs=3, help='Add user: -a <username> <password> <domain>', metavar=('user', 'password', 'domain'))
-    parser.add_argument('-r', help='Run the server', action='store_const', const=True)
+    parser.add_argument('-a', nargs=3,
+                        help='Add user: -a <username> <password> <domain>',
+                        metavar=('user', 'password', 'domain'))
+    parser.add_argument('-r', help='Run the server',
+                        action='store_const', const=True)
     parser.add_argument('-k', help='nsupdate keyfile', default='ddns-key.conf')
     parser.add_argument('-s', help='nameserver address')
     parser.add_argument('-z', help='nameserver zone')
@@ -122,4 +128,3 @@ if __name__ == "__main__":
 
     if args.a:
         add_user(args.a[0], args.a[1], args.a[2])
-
