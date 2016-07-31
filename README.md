@@ -12,9 +12,7 @@ Next, name your keyfile to `ddns-key.conf` and copy it into your install directo
 
 Start the server with
 
-    python ddns_updater.py -r -s ns1.example.com -z zone.example.com
-
-where `-s` is the nameserver and `-z` is the zone where the domains are updated.
+    python ddns_updater.py -r
 
 ### Systemd
 
