@@ -50,6 +50,7 @@ def run_nsupdate(domain, ip):
 
     subprocess.run(command, shell=True)
 
+
 @app.route('/update')
 def update():
     username = request.args.get('username')
@@ -81,6 +82,7 @@ def update():
 
     return 'ok'
 
+
 def add_user(username, pw, domain):
     hashed_pw = bcrypt.hashpw(pw.encode('UTF-8'), bcrypt.gensalt())
     u = User(username, hashed_pw, domain)
@@ -91,7 +93,6 @@ def add_user(username, pw, domain):
     except exc.IntegrityError:
         print('User {} already exists'.format(username))
         
-
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='DDNS updater')
