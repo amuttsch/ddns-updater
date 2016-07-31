@@ -1,5 +1,6 @@
 import argparse
 import bcrypt
+import getpass
 import socket
 import subprocess
 import sys
@@ -12,8 +13,6 @@ from sqlalchemy import exc
 
 VERBOSE = False
 nsupdate_keyfile = 'ddns-key.conf'
-nsupdate_server = ''
-nsupdate_zone = ''
 
 app = Flask(__name__)
 app.config['SQLALCHEMY_DATABASE_URI'] = 'sqlite:///database.db'
@@ -26,6 +25,8 @@ class User(db.Model):
     user = db.Column(db.String(80), unique=True)
     password = db.Column(db.Text())
     domain = db.Column(db.Text())
+    nameserver = db.Column(db.Text())
+    zone = db.Column(db.Text())
     last_ip = db.Column(db.String(64))
 
     def __init__(self, user, pw, domain):
@@ -37,12 +38,12 @@ class User(db.Model):
         return 'User: {}, Domain: {}'.format(self.user, self.domain)
 
 
-def run_nsupdate(domain, ip):
+def run_nsupdate(user):
     command = 'nsupdate -k {} -v <<EOF\n'.format(nsupdate_keyfile)
-    command += 'server {}\n'.format(nsupdate_server)
-    command += 'zone {}\n'.format(nsupdate_zone)
-    command += 'update delete {} A \n'.format(quote(domain))
-    command += 'update add {} 30 A {}\n'.format(quote(domain), quote(ip))
+    command += 'server {}\n'.format(user.nameserver)
+    command += 'zone {}\n'.format(user.zone)
+    command += 'update delete {} A \n'.format(quote(user.domain))
+    command += 'update add {} 30 A {}\n'.format(quote(user.domain), quote(user.last_ip))
     command += 'send\n'
     command += 'EOF\n'
 
@@ -81,32 +82,43 @@ def update():
     user.last_ip = ip
     db.session.commit()
 
-    run_nsupdate(user.domain, ip)
+    run_nsupdate(user)
 
     return 'ok'
 
 
-def add_user(username, pw, domain):
-    hashed_pw = bcrypt.hashpw(pw.encode('UTF-8'), bcrypt.gensalt())
-    u = User(username, hashed_pw, domain)
+def add_user():
+    user = ''
+    password = ''
+    domain = ''
+    user_valid = False;
+    while not user_valid:
+        user = input('Username: ')
+        password = getpass.getpass()
+        domain = input('Domain: ')
+        user_valid = User.query.filter_by(user=user, domain=domain) \
+                     .scalar() is None
+
+
+    hashed_pw = bcrypt.hashpw(password.encode('UTF-8'), bcrypt.gensalt())
+    u = User(user, hashed_pw, domain)
+    u.nameserver = input('Nameserver: ')
+    u.zone = input('Zone: ')
     db.session.add(u)
     try:
         db.session.commit()
-        print('User {} added successfully'.format(username))
+        print('User {} added successfully'.format(user))
     except exc.IntegrityError:
-        print('User {} already exists'.format(username))
+        print('User {} already exists'.format(user))
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='DDNS updater')
-    parser.add_argument('-a', nargs=3,
-                        help='Add user: -a <username> <password> <domain>',
-                        metavar=('user', 'password', 'domain'))
+    parser.add_argument('-a', action='store_true',
+                        help='Add a new user')
     parser.add_argument('-r', help='Run the server',
                         action='store_const', const=True)
     parser.add_argument('-k', help='nsupdate keyfile', default='ddns-key.conf')
-    parser.add_argument('-s', help='nameserver address')
-    parser.add_argument('-z', help='nameserver zone')
     parser.add_argument('-v', help='verbose', action='store_true')
     args = parser.parse_args()
 
@@ -114,17 +126,8 @@ if __name__ == "__main__":
         VERBOSE = True
 
     if args.r:
-        if not args.s:
-            print('No nameserver specified!')
-            exit()
-        if not args.z:
-            print('No zone specified!')
-            exit()
-
         nsupdate_keyfile = args.k
-        nsupdate_server = args.s
-        nsupdate_zone = args.z
         app.run()
 
     if args.a:
-        add_user(args.a[0], args.a[1], args.a[2])
+        add_user()
