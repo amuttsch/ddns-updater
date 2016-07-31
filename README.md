@@ -39,7 +39,7 @@ If you want to run this server behind nginx instead of the flask server, add the
     }
 
 ## User management
-To add a new user, run `python ddns_updater.py -a <username> <password> <domain>. The password is stored encrypted using bcrypt.
+To add a new user, run `python ddns_updater.py -a <username> <password> <domain>`. The password is stored encrypted using bcrypt.
 
 To modify or delete users, run `sqlite3 database.db` and change / delete the corresponding rows in the `user` table. 
 
